@@ -69,7 +69,7 @@ model = build_model(
 model.load_weights("./ssd7_weights.h5", by_name=True)
 
 
-def draw_inference(x):
+def draw_inference(x, scale=4):
     """Input and output will be an image in RGB format"""
     start = time()
     y_pred = model.predict(x[None])
@@ -95,7 +95,6 @@ def draw_inference(x):
     print("   class   conf xmin   ymin   xmax   ymax")
     print(y_pred_decoded[0])
 
-    scale = 4
     # Draw the predicted boxes in blue
     for box in y_pred_decoded[0]:
         xmin = box[-4]
@@ -118,13 +117,26 @@ def draw_inference(x):
 
 
 use_webcam = True
-x = cv.imread(
-    r"D:\off99555\Documents\ProgrammingProjects\DECA\MarkerBasedTracking\train_test_images\test\img00036.jpg",
-    cv.IMREAD_GRAYSCALE,
-)
-x = cv.cvtColor(x, cv.COLOR_GRAY2RGB)
-x = draw_inference(x)
-x = cv.cvtColor(x, cv.COLOR_RGB2BGR)
-cv.imshow("img", x)
-cv.waitKey(0)
-cv.destroyAllWindows()
+
+if use_webcam:
+    cap = cv.VideoCapture(0)
+    pp(cap.get(3), cap.get(4))
+    while True:
+        retval, x = cap.read()
+        x = cv.cvtColor(x, cv.COLOR_RGB2GRAY)
+        cv.imshow("img", x)
+        if cv.waitKey(1) & 0xFF == ord("q"):
+            break
+    cap.release()
+    cv.destroyAllWindows()
+else:
+    x = cv.imread(
+        r"D:\off99555\Documents\ProgrammingProjects\DECA\MarkerBasedTracking\train_test_images\test\img00036.jpg",
+        cv.IMREAD_GRAYSCALE,
+    )
+    x = cv.cvtColor(x, cv.COLOR_GRAY2RGB)
+    x = draw_inference(x)
+    x = cv.cvtColor(x, cv.COLOR_RGB2BGR)
+    cv.imshow("img", x)
+    cv.waitKey(0)
+    cv.destroyAllWindows()
