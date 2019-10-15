@@ -6,6 +6,7 @@ from ssd_encoder_decoder.ssd_output_decoder import (
 import numpy as np
 import cv2 as cv
 from snoop import pp
+from time import time
 
 img_height = 144  # Height of the input images
 img_width = 256  # Width of the input images
@@ -67,53 +68,63 @@ model = build_model(
 
 model.load_weights("./ssd7_weights.h5", by_name=True)
 
-# adam = Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
 
-# ssd_loss = SSDLoss(neg_pos_ratio=3, alpha=1.0)
+def draw_inference(x):
+    """Input and output will be an image in RGB format"""
+    start = time()
+    y_pred = model.predict(x[None])
+    stop1 = time()
+    print(y_pred.shape)
 
-x = cv.imread(
-    r"D:\off99555\Documents\ProgrammingProjects\DECA\MarkerBasedTracking\train_test_images\test\img00036.jpg"
-)
-x = cv.cvtColor(x, cv.COLOR_BGR2RGB)
-y_pred = model.predict(x[None])
-print(y_pred.shape)
-# model.compile(optimizer=adam, loss=ssd_loss.compute_loss)
-
-y_pred_decoded = decode_detections(
-    y_pred,
-    confidence_thresh=0.3,
-    iou_threshold=0.45,
-    top_k=200,
-    normalize_coords=normalize_coords,
-    img_height=img_height,
-    img_width=img_width,
-)
-
-np.set_printoptions(precision=2, suppress=True, linewidth=90)
-print("Predicted boxes:\n")
-print("   class   conf xmin   ymin   xmax   ymax")
-print(y_pred_decoded[0])
-
-scale = 4
-# Draw the predicted boxes in blue
-for box in y_pred_decoded[0]:
-    xmin = box[-4]
-    ymin = box[-3]
-    xmax = box[-2]
-    ymax = box[-1]
-    color = (255, 0, 0)
-    label = "{}: {:.0f} %".format("WMR", box[1] * 100)
-    xmin = int(round(xmin) * scale)
-    xmax = int(round(xmax) * scale)
-    ymin = int(round(ymin) * scale)
-    ymax = int(round(ymax) * scale)
-    pp(xmin, ymin, xmax, ymax, label)
-    x = cv.resize(x, (0, 0), None, fx=scale, fy=scale)
-    x = cv.rectangle(x, (xmin, ymin), (xmax, ymax), color, 2)
-    x = cv.putText(
-        x, label, (xmin, ymin), cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2
+    y_pred_decoded = decode_detections(
+        y_pred,
+        confidence_thresh=0.3,
+        iou_threshold=0.45,
+        top_k=200,
+        normalize_coords=normalize_coords,
+        img_height=img_height,
+        img_width=img_width,
     )
-    x = cv.cvtColor(x, cv.COLOR_RGB2BGR)
-    cv.imshow("img", x)
-    cv.waitKey(0)
+    stop2 = time()
+    elapsed1 = (stop1 - start) * 1000
+    elapsed2 = (stop2 - start) * 1000
+    pp(elapsed1, elapsed2)
+
+    np.set_printoptions(precision=2, suppress=True, linewidth=90)
+    print("Predicted boxes:\n")
+    print("   class   conf xmin   ymin   xmax   ymax")
+    print(y_pred_decoded[0])
+
+    scale = 4
+    # Draw the predicted boxes in blue
+    for box in y_pred_decoded[0]:
+        xmin = box[-4]
+        ymin = box[-3]
+        xmax = box[-2]
+        ymax = box[-1]
+        color = (255, 0, 0)
+        label = "{}: {:.0f} %".format("WMR", box[1] * 100)
+        xmin = int(round(xmin) * scale)
+        xmax = int(round(xmax) * scale)
+        ymin = int(round(ymin) * scale)
+        ymax = int(round(ymax) * scale)
+        pp(xmin, ymin, xmax, ymax, label)
+        x = cv.resize(x, (0, 0), None, fx=scale, fy=scale)
+        x = cv.rectangle(x, (xmin, ymin), (xmax, ymax), color, 2)
+        x = cv.putText(
+            x, label, (xmin, ymin), cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2
+        )
+    return x
+
+
+use_webcam = True
+x = cv.imread(
+    r"D:\off99555\Documents\ProgrammingProjects\DECA\MarkerBasedTracking\train_test_images\test\img00036.jpg",
+    cv.IMREAD_GRAYSCALE,
+)
+x = cv.cvtColor(x, cv.COLOR_GRAY2RGB)
+x = draw_inference(x)
+x = cv.cvtColor(x, cv.COLOR_RGB2BGR)
+cv.imshow("img", x)
+cv.waitKey(0)
 cv.destroyAllWindows()
