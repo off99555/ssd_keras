@@ -11,6 +11,7 @@ from time import time
 img_height = 144  # Height of the input images
 img_width = 256  # Width of the input images
 img_channels = 3  # Number of color channels of the input images
+pp(img_height, img_width)
 intensity_mean = (
     127.5
 )  # Set this to your preference (maybe `None`). The current settings transform the input pixel values to the interval `[-1,1]`.
@@ -130,13 +131,14 @@ use_webcam = True
 
 if use_webcam:
     cap = cv.VideoCapture(0)
+    cap.set(3, 1280)
     pp(cap.get(3), cap.get(4))
     while True:
         retval, x = cap.read()
         x = cv.resize(x, (img_width, img_height))
         x = cv.cvtColor(x, cv.COLOR_RGB2GRAY)
         x = cv.cvtColor(x, cv.COLOR_GRAY2RGB)
-        x = draw_inference(x, scale=4)
+        x = draw_inference(x, scale=5)
         x = cv.cvtColor(x, cv.COLOR_RGB2BGR)
         cv.imshow("img", x)
         if cv.waitKey(1) & 0xFF == ord("q"):
@@ -149,7 +151,7 @@ else:
         cv.IMREAD_GRAYSCALE,
     )
     x = cv.cvtColor(x, cv.COLOR_GRAY2RGB)
-    x = draw_inference(x, scale=4, verbose=1)
+    x = draw_inference(x, scale=5, verbose=1)
     x = cv.cvtColor(x, cv.COLOR_RGB2BGR)
     cv.imshow("img", x)
     cv.waitKey(0)
