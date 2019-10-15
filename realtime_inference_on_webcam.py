@@ -78,8 +78,8 @@ def draw_inference(x, scale=1, verbose=0):
     y_pred_decoded = decode_detections(
         y_pred,
         confidence_thresh=0.3,
-        iou_threshold=0.45,
-        top_k=200,
+        iou_threshold=0.3,
+        top_k=20,
         normalize_coords=normalize_coords,
         img_height=img_height,
         img_width=img_width,
@@ -99,6 +99,15 @@ def draw_inference(x, scale=1, verbose=0):
     # Draw the predicted boxes in blue
     if scale != 1:
         x = cv.resize(x, (0, 0), None, fx=scale, fy=scale)
+    x = cv.putText(
+        x,
+        f"Inference time: {elapsed2:.0f} ms",
+        (10, 50),
+        cv.FONT_HERSHEY_SIMPLEX,
+        1,
+        (0, 255, 255),
+        2,
+    )
     for box in y_pred_decoded[0]:
         xmin = box[-4]
         ymin = box[-3]
