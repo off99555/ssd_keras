@@ -94,23 +94,26 @@ print("Predicted boxes:\n")
 print("   class   conf xmin   ymin   xmax   ymax")
 print(y_pred_decoded[0])
 
+scale = 4
 # Draw the predicted boxes in blue
 for box in y_pred_decoded[0]:
     xmin = box[-4]
     ymin = box[-3]
     xmax = box[-2]
     ymax = box[-1]
-    color = (1, 0, 0)
-    label = "{}: {:.2f}".format("WMR", box[1])
-    xmin = int(round(xmin))
-    xmax = int(round(xmax))
-    ymin = int(round(ymin))
-    ymax = int(round(ymax))
+    color = (255, 0, 0)
+    label = "{}: {:.0f} %".format("WMR", box[1] * 100)
+    xmin = int(round(xmin) * scale)
+    xmax = int(round(xmax) * scale)
+    ymin = int(round(ymin) * scale)
+    ymax = int(round(ymax) * scale)
     pp(xmin, ymin, xmax, ymax, label)
-    x = cv.rectangle(x, (xmin, ymin), (xmax, ymax), color)
+    x = cv.resize(x, (0, 0), None, fx=scale, fy=scale)
+    x = cv.rectangle(x, (xmin, ymin), (xmax, ymax), color, 2)
+    x = cv.putText(
+        x, label, (xmin, ymin), cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2
+    )
     x = cv.cvtColor(x, cv.COLOR_RGB2BGR)
     cv.imshow("img", x)
     cv.waitKey(0)
-    # current_axis.add_patch(plt.Rectangle((xmin, ymin), xmax-xmin, ymax-ymin, color=color, fill=False, linewidth=2))
-    # current_axis.text(xmin, ymin, label, size='x-large', color='white', bbox={'facecolor':color, 'alpha':1.0})
 cv.destroyAllWindows()
