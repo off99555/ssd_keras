@@ -69,12 +69,11 @@ model = build_model(
 model.load_weights("./ssd7_weights.h5", by_name=True)
 
 
-def draw_inference(x, scale=4):
+def draw_inference(x, scale=1, verbose=0):
     """Input and output will be an image in RGB format"""
     start = time()
     y_pred = model.predict(x[None])
     stop1 = time()
-    print(y_pred.shape)
 
     y_pred_decoded = decode_detections(
         y_pred,
@@ -88,14 +87,18 @@ def draw_inference(x, scale=4):
     stop2 = time()
     elapsed1 = (stop1 - start) * 1000
     elapsed2 = (stop2 - start) * 1000
-    pp(elapsed1, elapsed2)
+    if verbose:
+        pp(elapsed1, elapsed2)
 
     np.set_printoptions(precision=2, suppress=True, linewidth=90)
-    print("Predicted boxes:\n")
-    print("   class   conf xmin   ymin   xmax   ymax")
-    print(y_pred_decoded[0])
+    if verbose:
+        print("Predicted boxes:\n")
+        print("   class   conf xmin   ymin   xmax   ymax")
+        print(y_pred_decoded[0])
 
     # Draw the predicted boxes in blue
+    if scale != 1:
+        x = cv.resize(x, (0, 0), None, fx=scale, fy=scale)
     for box in y_pred_decoded[0]:
         xmin = box[-4]
         ymin = box[-3]
@@ -107,8 +110,6 @@ def draw_inference(x, scale=4):
         xmax = int(round(xmax) * scale)
         ymin = int(round(ymin) * scale)
         ymax = int(round(ymax) * scale)
-        pp(xmin, ymin, xmax, ymax, label)
-        x = cv.resize(x, (0, 0), None, fx=scale, fy=scale)
         x = cv.rectangle(x, (xmin, ymin), (xmax, ymax), color, 2)
         x = cv.putText(
             x, label, (xmin, ymin), cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2
@@ -123,7 +124,11 @@ if use_webcam:
     pp(cap.get(3), cap.get(4))
     while True:
         retval, x = cap.read()
+        x = cv.resize(x, (img_width, img_height))
         x = cv.cvtColor(x, cv.COLOR_RGB2GRAY)
+        x = cv.cvtColor(x, cv.COLOR_GRAY2RGB)
+        x = draw_inference(x, scale=4)
+        x = cv.cvtColor(x, cv.COLOR_RGB2BGR)
         cv.imshow("img", x)
         if cv.waitKey(1) & 0xFF == ord("q"):
             break
@@ -135,7 +140,7 @@ else:
         cv.IMREAD_GRAYSCALE,
     )
     x = cv.cvtColor(x, cv.COLOR_GRAY2RGB)
-    x = draw_inference(x)
+    x = draw_inference(x, scale=4, verbose=1)
     x = cv.cvtColor(x, cv.COLOR_RGB2BGR)
     cv.imshow("img", x)
     cv.waitKey(0)
