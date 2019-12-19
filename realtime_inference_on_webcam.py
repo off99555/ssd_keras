@@ -24,6 +24,7 @@ scales = [
     0.16,
     0.32,
     0.64,
+    0.8,
     0.96,
 ]  # An explicit list of anchor box scaling factors. If this is passed, it will override `min_scale` and `max_scale`.
 aspect_ratios = [0.5, 1.0, 2.0]  # The list of aspect ratios for the anchor boxes
@@ -54,7 +55,7 @@ model = build_model(
     n_classes=n_classes,
     mode="training",
     l2_regularization=0.0005,
-    # scales=scales,
+    scales=scales,
     aspect_ratios_global=aspect_ratios,
     aspect_ratios_per_layer=None,
     two_boxes_for_ar1=two_boxes_for_ar1,
@@ -78,9 +79,9 @@ def draw_inference(x, scale=1, verbose=0):
 
     y_pred_decoded = decode_detections(
         y_pred,
-        confidence_thresh=0.3,
-        iou_threshold=0.3,
-        top_k=20,
+        confidence_thresh=0.5,
+        iou_threshold=0.45,
+        top_k=10,
         normalize_coords=normalize_coords,
         img_height=img_height,
         img_width=img_width,
