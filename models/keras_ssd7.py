@@ -32,7 +32,7 @@ def build_model(image_size,
                 mode='training',
                 l2_regularization=0.0,
                 min_scale=0.1,
-                max_scale=0.9,
+                max_scale=0.96,
                 scales=None,
                 aspect_ratios_global=[0.5, 1.0, 2.0],
                 aspect_ratios_per_layer=None,
@@ -174,7 +174,7 @@ def build_model(image_size,
         https://arxiv.org/abs/1512.02325v5
     '''
 
-    n_predictor_layers = 4 # The number of predictor conv layers in the network
+    n_predictor_layers = 5 # The number of predictor conv layers in the network
     n_classes += 1 # Account for the background class.
     l2_reg = l2_regularization # Make the internal name shorter.
     img_height, img_width, img_channels = image_size[0], image_size[1], image_size[2]
@@ -274,22 +274,22 @@ def build_model(image_size,
     if swap_channels:
         x1 = Lambda(input_channel_swap, output_shape=(img_height, img_width, img_channels), name='input_channel_swap')(x1)
 
-    conv1 = Conv2D(32, (5, 5), strides=(1, 1), padding="same", kernel_initializer='he_normal', kernel_regularizer=l2(l2_reg), name='conv1')(x1)
+    conv1 = Conv2D(16, (5, 5), strides=(1, 1), padding="same", kernel_initializer='he_normal', kernel_regularizer=l2(l2_reg), name='conv1')(x1)
     conv1 = BatchNormalization(axis=3, momentum=0.99, name='bn1')(conv1) # Tensorflow uses filter format [filter_height, filter_width, in_channels, out_channels], hence axis = 3
     conv1 = ELU(name='elu1')(conv1)
     pool1 = MaxPooling2D(pool_size=(2, 2), name='pool1')(conv1)
 
-    conv2 = Conv2D(48, (3, 3), strides=(1, 1), padding="same", kernel_initializer='he_normal', kernel_regularizer=l2(l2_reg), name='conv2')(pool1)
+    conv2 = Conv2D(24, (3, 3), strides=(1, 1), padding="same", kernel_initializer='he_normal', kernel_regularizer=l2(l2_reg), name='conv2')(pool1)
     conv2 = BatchNormalization(axis=3, momentum=0.99, name='bn2')(conv2)
     conv2 = ELU(name='elu2')(conv2)
     pool2 = MaxPooling2D(pool_size=(2, 2), name='pool2')(conv2)
 
-    conv3 = Conv2D(64, (3, 3), strides=(1, 1), padding="same", kernel_initializer='he_normal', kernel_regularizer=l2(l2_reg), name='conv3')(pool2)
+    conv3 = Conv2D(32, (3, 3), strides=(1, 1), padding="same", kernel_initializer='he_normal', kernel_regularizer=l2(l2_reg), name='conv3')(pool2)
     conv3 = BatchNormalization(axis=3, momentum=0.99, name='bn3')(conv3)
     conv3 = ELU(name='elu3')(conv3)
     pool3 = MaxPooling2D(pool_size=(2, 2), name='pool3')(conv3)
 
-    conv4 = Conv2D(64, (3, 3), strides=(1, 1), padding="same", kernel_initializer='he_normal', kernel_regularizer=l2(l2_reg), name='conv4')(pool3)
+    conv4 = Conv2D(48, (3, 3), strides=(1, 1), padding="same", kernel_initializer='he_normal', kernel_regularizer=l2(l2_reg), name='conv4')(pool3)
     conv4 = BatchNormalization(axis=3, momentum=0.99, name='bn4')(conv4)
     conv4 = ELU(name='elu4')(conv4)
     pool4 = MaxPooling2D(pool_size=(2, 2), name='pool4')(conv4)
@@ -307,6 +307,11 @@ def build_model(image_size,
     conv7 = Conv2D(32, (3, 3), strides=(1, 1), padding="same", kernel_initializer='he_normal', kernel_regularizer=l2(l2_reg), name='conv7')(pool6)
     conv7 = BatchNormalization(axis=3, momentum=0.99, name='bn7')(conv7)
     conv7 = ELU(name='elu7')(conv7)
+    pool7 = MaxPooling2D(pool_size=(2, 2), name='pool7')(conv7)
+
+    conv8 = Conv2D(32, (3, 3), strides=(1, 1), padding="same", kernel_initializer='he_normal', kernel_regularizer=l2(l2_reg), name='conv8')(pool7)
+    conv8 = BatchNormalization(axis=3, momentum=0.99, name='bn8')(conv8)
+    conv8 = ELU(name='elu8')(conv8)
 
     # The next part is to add the convolutional predictor layers on top of the base network
     # that we defined above. Note that I use the term "base network" differently than the paper does.
@@ -324,11 +329,13 @@ def build_model(image_size,
     classes5 = Conv2D(n_boxes[1] * n_classes, (3, 3), strides=(1, 1), padding="same", kernel_initializer='he_normal', kernel_regularizer=l2(l2_reg), name='classes5')(conv5)
     classes6 = Conv2D(n_boxes[2] * n_classes, (3, 3), strides=(1, 1), padding="same", kernel_initializer='he_normal', kernel_regularizer=l2(l2_reg), name='classes6')(conv6)
     classes7 = Conv2D(n_boxes[3] * n_classes, (3, 3), strides=(1, 1), padding="same", kernel_initializer='he_normal', kernel_regularizer=l2(l2_reg), name='classes7')(conv7)
+    classes8 = Conv2D(n_boxes[4] * n_classes, (3, 3), strides=(1, 1), padding="same", kernel_initializer='he_normal', kernel_regularizer=l2(l2_reg), name='classes8')(conv8)
     # Output shape of `boxes`: `(batch, height, width, n_boxes * 4)`
     boxes4 = Conv2D(n_boxes[0] * 4, (3, 3), strides=(1, 1), padding="same", kernel_initializer='he_normal', kernel_regularizer=l2(l2_reg), name='boxes4')(conv4)
     boxes5 = Conv2D(n_boxes[1] * 4, (3, 3), strides=(1, 1), padding="same", kernel_initializer='he_normal', kernel_regularizer=l2(l2_reg), name='boxes5')(conv5)
     boxes6 = Conv2D(n_boxes[2] * 4, (3, 3), strides=(1, 1), padding="same", kernel_initializer='he_normal', kernel_regularizer=l2(l2_reg), name='boxes6')(conv6)
     boxes7 = Conv2D(n_boxes[3] * 4, (3, 3), strides=(1, 1), padding="same", kernel_initializer='he_normal', kernel_regularizer=l2(l2_reg), name='boxes7')(conv7)
+    boxes8 = Conv2D(n_boxes[4] * 4, (3, 3), strides=(1, 1), padding="same", kernel_initializer='he_normal', kernel_regularizer=l2(l2_reg), name='boxes8')(conv8)
 
     # Generate the anchor boxes
     # Output shape of `anchors`: `(batch, height, width, n_boxes, 8)`
@@ -344,6 +351,9 @@ def build_model(image_size,
     anchors7 = AnchorBoxes(img_height, img_width, this_scale=scales[3], next_scale=scales[4], aspect_ratios=aspect_ratios[3],
                            two_boxes_for_ar1=two_boxes_for_ar1, this_steps=steps[3], this_offsets=offsets[3],
                            clip_boxes=clip_boxes, variances=variances, coords=coords, normalize_coords=normalize_coords, name='anchors7')(boxes7)
+    anchors8 = AnchorBoxes(img_height, img_width, this_scale=scales[4], next_scale=scales[5], aspect_ratios=aspect_ratios[4],
+                           two_boxes_for_ar1=two_boxes_for_ar1, this_steps=steps[4], this_offsets=offsets[4],
+                           clip_boxes=clip_boxes, variances=variances, coords=coords, normalize_coords=normalize_coords, name='anchors8')(boxes8)
 
     # Reshape the class predictions, yielding 3D tensors of shape `(batch, height * width * n_boxes, n_classes)`
     # We want the classes isolated in the last axis to perform softmax on them
@@ -351,17 +361,20 @@ def build_model(image_size,
     classes5_reshaped = Reshape((-1, n_classes), name='classes5_reshape')(classes5)
     classes6_reshaped = Reshape((-1, n_classes), name='classes6_reshape')(classes6)
     classes7_reshaped = Reshape((-1, n_classes), name='classes7_reshape')(classes7)
+    classes8_reshaped = Reshape((-1, n_classes), name='classes8_reshape')(classes8)
     # Reshape the box coordinate predictions, yielding 3D tensors of shape `(batch, height * width * n_boxes, 4)`
     # We want the four box coordinates isolated in the last axis to compute the smooth L1 loss
     boxes4_reshaped = Reshape((-1, 4), name='boxes4_reshape')(boxes4)
     boxes5_reshaped = Reshape((-1, 4), name='boxes5_reshape')(boxes5)
     boxes6_reshaped = Reshape((-1, 4), name='boxes6_reshape')(boxes6)
     boxes7_reshaped = Reshape((-1, 4), name='boxes7_reshape')(boxes7)
+    boxes8_reshaped = Reshape((-1, 4), name='boxes8_reshape')(boxes8)
     # Reshape the anchor box tensors, yielding 3D tensors of shape `(batch, height * width * n_boxes, 8)`
     anchors4_reshaped = Reshape((-1, 8), name='anchors4_reshape')(anchors4)
     anchors5_reshaped = Reshape((-1, 8), name='anchors5_reshape')(anchors5)
     anchors6_reshaped = Reshape((-1, 8), name='anchors6_reshape')(anchors6)
     anchors7_reshaped = Reshape((-1, 8), name='anchors7_reshape')(anchors7)
+    anchors8_reshaped = Reshape((-1, 8), name='anchors8_reshape')(anchors8)
 
     # Concatenate the predictions from the different layers and the assosciated anchor box tensors
     # Axis 0 (batch) and axis 2 (n_classes or 4, respectively) are identical for all layer predictions,
@@ -370,19 +383,22 @@ def build_model(image_size,
     classes_concat = Concatenate(axis=1, name='classes_concat')([classes4_reshaped,
                                                                  classes5_reshaped,
                                                                  classes6_reshaped,
-                                                                 classes7_reshaped])
+                                                                 classes7_reshaped,
+                                                                 classes8_reshaped])
 
     # Output shape of `boxes_concat`: (batch, n_boxes_total, 4)
     boxes_concat = Concatenate(axis=1, name='boxes_concat')([boxes4_reshaped,
                                                              boxes5_reshaped,
                                                              boxes6_reshaped,
-                                                             boxes7_reshaped])
+                                                             boxes7_reshaped,
+                                                             boxes8_reshaped])
 
     # Output shape of `anchors_concat`: (batch, n_boxes_total, 8)
     anchors_concat = Concatenate(axis=1, name='anchors_concat')([anchors4_reshaped,
                                                                  anchors5_reshaped,
                                                                  anchors6_reshaped,
-                                                                 anchors7_reshaped])
+                                                                 anchors7_reshaped,
+                                                                 anchors8_reshaped])
 
     # The box coordinate predictions will go into the loss function just the way they are,
     # but for the class predictions, we'll apply a softmax activation layer first
@@ -424,7 +440,8 @@ def build_model(image_size,
         predictor_sizes = np.array([classes4._keras_shape[1:3],
                                     classes5._keras_shape[1:3],
                                     classes6._keras_shape[1:3],
-                                    classes7._keras_shape[1:3]])
+                                    classes7._keras_shape[1:3],
+                                    classes8._keras_shape[1:3]])
         return model, predictor_sizes
     else:
         return model

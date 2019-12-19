@@ -54,7 +54,7 @@ model = build_model(
     n_classes=n_classes,
     mode="training",
     l2_regularization=0.0005,
-    scales=scales,
+    # scales=scales,
     aspect_ratios_global=aspect_ratios,
     aspect_ratios_per_layer=None,
     two_boxes_for_ar1=two_boxes_for_ar1,
@@ -115,7 +115,7 @@ def draw_inference(x, scale=1, verbose=0):
         xmax = box[-2]
         ymax = box[-1]
         color = (255, 0, 0)
-        label = "{}: {:.0f} %".format("WMR", box[1] * 100)
+        label = "{}: {:.0f} %".format("tracker", box[1] * 100)
         xmin = int(round(xmin) * scale)
         xmax = int(round(xmax) * scale)
         ymin = int(round(ymin) * scale)
@@ -130,14 +130,18 @@ def draw_inference(x, scale=1, verbose=0):
 use_webcam = True
 
 if use_webcam:
-    cap = cv.VideoCapture(0)
+    cap = cv.VideoCapture(1)
     cap.set(3, 1280)
+    cap.set(cv.CAP_PROP_EXPOSURE, -8)
+    cap.set(cv.CAP_PROP_GAIN, 255)
+    cap.set(cv.CAP_PROP_CONTRAST, 0)
+    # cap.set(4, 720)
     pp(cap.get(3), cap.get(4))
     while True:
         retval, x = cap.read()
         x = cv.resize(x, (img_width, img_height))
-        x = cv.cvtColor(x, cv.COLOR_RGB2GRAY)
-        x = cv.cvtColor(x, cv.COLOR_GRAY2RGB)
+        cv.cvtColor(x, cv.COLOR_BGR2RGB, x)
+        # x = cv.cvtColor(x, cv.COLOR_GRAY2RGB)
         x = draw_inference(x, scale=5)
         x = cv.cvtColor(x, cv.COLOR_RGB2BGR)
         cv.imshow("img", x)
